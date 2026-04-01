@@ -1,0 +1,52 @@
+{
+  "name": "eclusa",
+  "version": "0.1.0",
+  "description": "A six-stage narrowing pipeline from noisy human intent to constrained, test-backed code. Built on GSD's coordination infrastructure.",
+  "bin": {
+    "eclusa": "bin/install.js"
+  },
+  "files": [
+    "bin",
+    "commands",
+    "eclusa",
+    "agents",
+    "hooks/dist",
+    "scripts"
+  ],
+  "keywords": [
+    "eclusa",
+    "claude",
+    "claude-code",
+    "ai",
+    "meta-prompting",
+    "context-engineering",
+    "spec-driven-development",
+    "schema-commons",
+    "formal-constraints",
+    "code-generation"
+  ],
+  "author": "TÂCHES",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eclusa/eclusa.git"
+  },
+  "homepage": "https://github.com/eclusa/eclusa",
+  "bugs": {
+    "url": "https://github.com/eclusa/eclusa/issues"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "c8": "^11.0.0",
+    "esbuild": "^0.24.0",
+    "vitest": "^4.1.2"
+  },
+  "scripts": {
+    "build:hooks": "node scripts/build-hooks.js",
+    "prepublishOnly": "npm run build:hooks",
+    "test": "node scripts/run-tests.cjs",
+    "test:coverage": "c8 --check-coverage --lines 70 --reporter text --include 'eclusa/bin/lib/*.cjs' --exclude 'tests/**' --all node scripts/run-tests.cjs"
+  }
+}

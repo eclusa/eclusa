@@ -1,0 +1,64 @@
+node_modules/
+.DS_Store
+TO-DOS.md
+CLAUDE.md
+/research.claude/
+commands.html
+
+# Local test installs
+.claude/
+
+# Build artifacts (committed to npm, not git)
+hooks/dist/
+
+# Coverage artifacts
+coverage/
+
+# Animation assets
+animation/
+*.gif
+
+# Internal planning documents
+reports/
+RAILROAD_ARCHITECTURE.md
+.eclusa/
+analysis/
+docs/Eclusa-MASTER-ARCHITECTURE.md
+docs/Eclusa-RUST-IMPLEMENTATION-GUIDE.md
+docs/Eclusa-SYSTEM-SPECIFICATION.md
+gaps.md
+improve.md
+philosophy.md
+
+# Installed skills
+.github/agents/eclusa-*
+.github/skills/eclusa-*
+.github/eclusa/*
+.github/skills/eclusa
+.github/copilot-instructions.md
+.bg-shell/
+
+# ── Eclusa baseline (auto-generated) ──
+.eclusa
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.code-workspace
+.env
+.env.*
+!.env.example
+.next/
+dist/
+build/
+__pycache__/
+*.pyc
+.venv/
+venv/
+target/
+vendor/
+*.log
+.cache/
+tmp/

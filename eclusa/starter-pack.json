@@ -1,0 +1,367 @@
+{
+  "version": 1,
+  "description": "Eclusa Schema Commons starter pack — curated industry standards and OSS implementations",
+  "last_updated": "2026-04-01",
+  "sources": [
+    {
+      "industry": "music",
+      "name": "DDEX ERN Protobuf",
+      "repo": "OpenAudio/ddex-proto",
+      "path": "proto/",
+      "format": "protobuf",
+      "description": "Digital Data Exchange — Electronic Release Notification schemas"
+    },
+    {
+      "industry": "music",
+      "name": "MusicBrainz Database Schema",
+      "repo": "metabrainz/musicbrainz-server",
+      "path": "admin/sql/CreateTables.sql",
+      "format": "sql_ddl",
+      "description": "MusicBrainz canonical database schema — artists, releases, recordings, works"
+    },
+    {
+      "industry": "healthcare",
+      "name": "HL7 FHIR JSON Schemas",
+      "repo": "fhir-schema/fhir-schema",
+      "path": "packages/fhir-r4/",
+      "format": "json_schema",
+      "description": "FHIR R4 StructureDefinitions as developer-friendly JSON Schema"
+    },
+    {
+      "industry": "healthcare",
+      "name": "HAPI FHIR Models",
+      "repo": "hapifhir/hapi-fhir",
+      "path": "hapi-fhir-structures-r4/src/main/java/org/hl7/fhir/r4/model/",
+      "format": "java",
+      "description": "HAPI FHIR Java models — typed FHIR resource implementations"
+    },
+    {
+      "industry": "finance",
+      "name": "ISO 20022 Message Schemas",
+      "repo": "nicpillinger/iso20022-messages-for-go",
+      "path": "types/",
+      "format": "go",
+      "description": "ISO 20022 financial message types in Go"
+    },
+    {
+      "industry": "finance",
+      "name": "Open Banking UK API Specs",
+      "repo": "OpenBankingUK/read-write-api-specs",
+      "path": "dist/",
+      "format": "openapi",
+      "description": "UK Open Banking read/write API specifications — accounts, payments, events"
+    },
+    {
+      "industry": "payments",
+      "name": "Stripe OpenAPI Spec",
+      "repo": "stripe/openapi",
+      "path": "openapi/spec3.json",
+      "format": "openapi",
+      "description": "Stripe API — payments, billing, subscriptions, customers"
+    },
+    {
+      "industry": "payments",
+      "name": "Moov Financial Types",
+      "repo": "moov-io/moov-go",
+      "path": "pkg/",
+      "format": "go",
+      "description": "Moov financial primitives — ACH, wire, ISO 8583"
+    },
+    {
+      "industry": "ecommerce",
+      "name": "Medusa Commerce Models",
+      "repo": "medusajs/medusa",
+      "path": "packages/core/types/src/",
+      "format": "typescript",
+      "description": "Medusa headless commerce — products, orders, carts, payments, shipping"
+    },
+    {
+      "industry": "ecommerce",
+      "name": "Saleor GraphQL Schema",
+      "repo": "saleor/saleor",
+      "path": "saleor/graphql/",
+      "format": "graphql",
+      "description": "Saleor e-commerce GraphQL API — products, checkout, orders"
+    },
+    {
+      "industry": "identity",
+      "name": "Ory Kratos Identity Schema",
+      "repo": "ory/kratos",
+      "path": "persistence/sql/migrations/",
+      "format": "sql_ddl",
+      "description": "Ory Kratos identity management — users, sessions, flows, credentials"
+    },
+    {
+      "industry": "identity",
+      "name": "Keycloak Admin API",
+      "repo": "keycloak/keycloak",
+      "path": "rest/admin-ui-ext/",
+      "format": "openapi",
+      "description": "Keycloak identity — realms, users, roles, clients, authentication flows"
+    },
+    {
+      "industry": "cloud",
+      "name": "Kubernetes API Types",
+      "repo": "kubernetes/api",
+      "path": "core/v1/types.go",
+      "format": "go",
+      "description": "Kubernetes core API types — Pods, Services, Deployments, ConfigMaps"
+    },
+    {
+      "industry": "cloud",
+      "name": "CloudEvents Spec",
+      "repo": "cloudevents/spec",
+      "path": "cloudevents/formats/",
+      "format": "json_schema",
+      "description": "CloudEvents specification — event envelope, protocol bindings"
+    },
+    {
+      "industry": "cloud",
+      "name": "Terraform AWS Provider Schemas",
+      "repo": "hashicorp/terraform-provider-aws",
+      "path": "internal/service/",
+      "format": "go",
+      "description": "Terraform AWS provider — resource schemas for 200+ AWS services"
+    },
+    {
+      "industry": "messaging",
+      "name": "Twilio OpenAPI Spec",
+      "repo": "twilio/twilio-oai",
+      "path": "spec/json/",
+      "format": "openapi",
+      "description": "Twilio API — messaging, voice, video, conversations"
+    },
+    {
+      "industry": "messaging",
+      "name": "Discord API Types",
+      "repo": "discord/discord-api-docs",
+      "path": "docs/resources/",
+      "format": "markdown",
+      "description": "Discord API resource documentation — guilds, channels, messages, users"
+    },
+    {
+      "industry": "observability",
+      "name": "OpenTelemetry Proto",
+      "repo": "open-telemetry/opentelemetry-proto",
+      "path": "opentelemetry/proto/",
+      "format": "protobuf",
+      "description": "OpenTelemetry data model — traces, metrics, logs, baggage"
+    },
+    {
+      "industry": "observability",
+      "name": "Prometheus Data Model",
+      "repo": "prometheus/prometheus",
+      "path": "model/",
+      "format": "go",
+      "description": "Prometheus time series data model — metrics, labels, samples"
+    },
+    {
+      "industry": "devops",
+      "name": "GitHub Actions Schemas",
+      "repo": "SchemaStore/schemastore",
+      "path": "src/schemas/json/github-workflow.json",
+      "format": "json_schema",
+      "description": "GitHub Actions workflow schema — jobs, steps, triggers, matrix"
+    },
+    {
+      "industry": "devops",
+      "name": "GitLab CI Schema",
+      "repo": "SchemaStore/schemastore",
+      "path": "src/schemas/json/gitlab-ci.json",
+      "format": "json_schema",
+      "description": "GitLab CI/CD pipeline schema — stages, jobs, artifacts, rules"
+    },
+    {
+      "industry": "travel",
+      "name": "Amadeus Self-Service APIs",
+      "repo": "amadeus4dev/amadeus-open-api-specification",
+      "path": "spec/",
+      "format": "openapi",
+      "description": "Amadeus travel APIs — flights, hotels, points of interest"
+    },
+    {
+      "industry": "logistics",
+      "name": "GS1 EPCIS Events",
+      "repo": "gs1/EPCIS",
+      "path": "JSON/",
+      "format": "json_schema",
+      "description": "GS1 EPCIS 2.0 — supply chain visibility events, what/where/when/why"
+    },
+    {
+      "industry": "iot",
+      "name": "Matter Device Types",
+      "repo": "project-chip/connectedhomeip",
+      "path": "src/app/zap-templates/zcl/data-model/chip/",
+      "format": "xsd",
+      "description": "Matter/CHIP smart home device types — clusters, attributes, commands"
+    },
+    {
+      "industry": "crm",
+      "name": "HubSpot API Schemas",
+      "repo": "HubSpot/HubSpot-public-api-spec-collection",
+      "path": "spec/",
+      "format": "openapi",
+      "description": "HubSpot CRM API — contacts, companies, deals, tickets, pipelines"
+    },
+    {
+      "industry": "telecom",
+      "name": "TM Forum Open APIs",
+      "repo": "tmforum-apis/TMF620_ProductCatalog",
+      "path": "TMF620-ProductCatalog-v5.0.0.oas.yaml",
+      "format": "openapi",
+      "description": "TM Forum Open API — product catalog, ordering, billing"
+    },
+    {
+      "industry": "education",
+      "name": "xAPI Statement Schema",
+      "repo": "adlnet/xAPI-Spec",
+      "path": "xAPI-Communication.md",
+      "format": "json_schema",
+      "description": "Experience API (xAPI) — learning activity statements, verbs, actors"
+    },
+    {
+      "industry": "energy",
+      "name": "OpenADR Schemas",
+      "repo": "OpenADR/openadr-3-api-specification",
+      "path": "spec/",
+      "format": "openapi",
+      "description": "OpenADR 3.0 — automated demand response, events, reports, VENs/VTNs"
+    },
+    {
+      "industry": "legal",
+      "name": "Akoma Ntoso Schemas",
+      "repo": "oasis-tcs/legaldocml-akomantoso",
+      "path": "akomantoso30/",
+      "format": "xsd",
+      "description": "Akoma Ntoso — legal document markup, acts, bills, judgments"
+    },
+    {
+      "industry": "real_estate",
+      "name": "RESO Data Dictionary",
+      "repo": "RESOStandards/reso-transport-specifications",
+      "path": "data-dictionary/",
+      "format": "json_schema",
+      "description": "RESO real estate data dictionary — properties, listings, agents, offices"
+    },
+    {
+      "industry": "frontend",
+      "name": "Material Design Tokens",
+      "repo": "nicepkg/gpt-runner",
+      "path": "packages/gpt-runner-web/src/styles/tokens.ts",
+      "format": "typescript",
+      "description": "Material Design 3 design tokens — color, typography, shape, motion, elevation"
+    },
+    {
+      "industry": "frontend",
+      "name": "Radix UI Primitives Types",
+      "repo": "radix-ui/primitives",
+      "path": "packages/react/dialog/src/Dialog.tsx",
+      "format": "typescript",
+      "description": "Radix unstyled primitive components — typed props, state machines, accessibility contracts"
+    },
+    {
+      "industry": "frontend",
+      "name": "Framer Motion Types",
+      "repo": "motiondivision/motion",
+      "path": "packages/framer-motion/src/types.ts",
+      "format": "typescript",
+      "description": "Motion animation primitives — spring, tween, keyframes, gestures, layout animations"
+    },
+    {
+      "industry": "frontend",
+      "name": "W3C Design Tokens Format",
+      "repo": "design-tokens/community-group",
+      "path": "technical-reports/format/dtcg.schema.json",
+      "format": "json_schema",
+      "description": "W3C Design Tokens Community Group format — cross-platform token interchange"
+    },
+    {
+      "industry": "meta",
+      "name": "ThoughtWorks Tech Radar",
+      "repo": "setchy/thoughtworks-tech-radar-volumes",
+      "path": "data/",
+      "format": "json_schema",
+      "description": "All ThoughtWorks Technology Radar volumes — techniques, tools, platforms, languages with adopt/trial/assess/hold rings"
+    },
+    {
+      "industry": "meta",
+      "name": "Awesome Selfhosted Data",
+      "repo": "awesome-selfhosted/awesome-selfhosted-data",
+      "path": "software/",
+      "format": "json_schema",
+      "description": "Structured YAML catalog of self-hosted software — categories, tags, license, language per entry"
+    },
+    {
+      "industry": "toolchain",
+      "name": "Ruff Linter Config Schema",
+      "repo": "astral-sh/ruff",
+      "path": "ruff.schema.json",
+      "format": "json_schema",
+      "description": "Ruff (Astral) configuration — lint rules, per-file ignores, target Python version, format options"
+    },
+    {
+      "industry": "toolchain",
+      "name": "UV Package Manager Schema",
+      "repo": "astral-sh/uv",
+      "path": "uv.schema.json",
+      "format": "json_schema",
+      "description": "uv (Astral) configuration — dependency resolution, index URLs, Python version constraints"
+    },
+    {
+      "industry": "toolchain",
+      "name": "Biome Config Schema",
+      "repo": "biomejs/biome",
+      "path": "packages/@biomejs/biome/configuration_schema.json",
+      "format": "json_schema",
+      "description": "Biome formatter + linter configuration — JS/TS/JSON/CSS rules, organize imports, format options"
+    },
+    {
+      "industry": "data",
+      "name": "OpenLineage Spec",
+      "repo": "OpenLineage/OpenLineage",
+      "path": "spec/OpenLineage.json",
+      "format": "json_schema",
+      "description": "OpenLineage data lineage standard — run events, job facets, dataset facets, input/output tracking"
+    },
+    {
+      "industry": "data",
+      "name": "Apache Iceberg Table Spec",
+      "repo": "apache/iceberg",
+      "path": "format/spec.md",
+      "format": "markdown",
+      "description": "Iceberg table format — manifest files, snapshot isolation, schema evolution, partition specs"
+    },
+    {
+      "industry": "cloud",
+      "name": "AWS Well-Architected Custom Lens",
+      "repo": "aws-samples/custom-lens-wa-hub",
+      "path": "lenses/",
+      "format": "json_schema",
+      "description": "AWS Well-Architected custom lens templates — pillars, best practices, improvement plans"
+    },
+    {
+      "industry": "mobile",
+      "name": "Flutter Widgets Catalog",
+      "repo": "nicepkg/gpt-runner",
+      "path": "widgets.json",
+      "format": "json_schema",
+      "description": "Flutter widget metadata — all widgets with categories, properties, inheritance, platform support"
+    },
+    {
+      "industry": "patterns",
+      "name": "Java Design Patterns",
+      "repo": "iluwatar/java-design-patterns",
+      "path": "pom.xml",
+      "format": "java",
+      "description": "93k-star design patterns catalog — tagged, categorized, implemented as typed Java code (creational, structural, behavioral, concurrency)"
+    },
+    {
+      "industry": "patterns",
+      "name": "Domain-Driven Hexagonal TypeScript",
+      "repo": "Sairyss/domain-driven-hexagon",
+      "path": "src/",
+      "format": "typescript",
+      "description": "DDD + hexagonal architecture reference in TypeScript — aggregates, value objects, domain events, ports and adapters"
+    }
+  ]
+}

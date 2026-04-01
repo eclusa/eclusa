@@ -1,0 +1,53 @@
+# Eclusa infrastructure
+# Start with: docker compose up -d
+# Or via: npx eclusa (auto-starts)
+#
+# Services:
+#   qdrant    — Vector database for the schema commons (port 6333)
+#   embedder  — HuggingFace Text Embeddings Inference (port 8081)
+#   ghc       — Haskell compiler for constraint type-checking
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  embedder:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.6
+    ports:
+      - "8081:80"
+    volumes:
+      - embedder_cache:/data
+    environment:
+      - MODEL_ID=BAAI/bge-small-en-v1.5
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  ghc:
+    image: haskell:9.8-slim
+    volumes:
+      - ./constraints:/workspace/constraints
+    working_dir: /workspace
+    # Stays running so eclusa:constrain can exec into it
+    command: ["sleep", "infinity"]
+    profiles:
+      - constrain
+
+volumes:
+  qdrant_data:
+  embedder_cache:
