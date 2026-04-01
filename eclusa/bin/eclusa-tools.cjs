@@ -589,12 +589,12 @@ async function runCommand(command, args, cwd, raw) {
       // Generates minimal SUMMARY.md and updates tracking.
       // Usage: plan-complete <plan-id> [--message "what was built"]
       const planId = args[1];
-      if (!planId) error('plan-id required: plan-complete 02-01 --message "..."');
+      if (!planId) core.error('plan-id required: plan-complete 02-01 --message "..."');
       const msgIdx = args.indexOf('--message');
       const message = msgIdx >= 0 ? args.slice(msgIdx + 1).join(' ') : 'Completed inline';
       const phaseNum = planId.split('-')[0];
-      const phaseInfo = phase.findPhaseInternal(cwd, phaseNum);
-      if (!phaseInfo) error(`Phase ${phaseNum} not found`);
+      const phaseInfo = core.findPhaseInternal(cwd, phaseNum);
+      if (!phaseInfo) core.error(`Phase ${phaseNum} not found`);
       const phaseDir = path.join(cwd, phaseInfo.directory);
       const summaryPath = path.join(phaseDir, `${planId}-SUMMARY.md`);
 
@@ -627,7 +627,7 @@ async function runCommand(command, args, cwd, raw) {
       // Update roadmap progress
       roadmap.cmdRoadmapUpdatePlanProgress(cwd, planId, false);
 
-      output({
+      core.output({
         created: true,
         summary_path: summaryPath,
         plan_id: planId,
