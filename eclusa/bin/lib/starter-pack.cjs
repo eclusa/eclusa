@@ -23,35 +23,67 @@ const { ingestContent } = require('./ingest.cjs');
 const STARTER_PACK_PATH = path.join(__dirname, '..', '..', 'starter-pack.json');
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com';
 
+// ─── Schema Commons Gate ────────────────────────────────────────────────────
+
+/**
+ * Check if schema commons (Qdrant) is enabled for this project.
+ * Defaults to false — the human must opt in during /eclusa:new-project.
+ * Checks .eclusa/config.json > schema_commons.enabled
+ */
+function isSchemaCommonsEnabled() {
+  try {
+    // Check project-level config first
+    const configPath = path.join(process.cwd(), '.eclusa', 'config.json');
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      if (config.schema_commons && config.schema_commons.enabled === true) return true;
+    }
+    // Check global config
+    const globalPath = path.join(require('os').homedir(), '.eclusa', 'config.json');
+    if (fs.existsSync(globalPath)) {
+      const config = JSON.parse(fs.readFileSync(globalPath, 'utf-8'));
+      if (config.schema_commons && config.schema_commons.enabled === true) return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
 // ─── Environment Check ──────────────────────────────────────────────────────
 
 /**
- * Hard gate: check that the eclusa infrastructure is ready.
+ * Check that the eclusa infrastructure is ready.
  * Returns { ready, issues[] }.
+ * Schema commons (Qdrant) is opt-in — only checked if enabled in config.
  */
 async function checkEnvironment() {
   const issues = [];
 
-  // Check Docker / Qdrant
-  const qdrant = new QdrantClient();
-  const qdrantAlive = await qdrant.ping();
-  if (!qdrantAlive) {
-    issues.push({
-      component: 'qdrant',
-      message: 'Qdrant is not running',
-      fix: 'docker compose up -d',
-    });
-  }
+  // Check Docker / Qdrant — only if schema commons is enabled
+  // Schema commons is opt-in: the human decides during /eclusa:new-project
+  // Pipeline stages (match, cohere, ingest) degrade gracefully when disabled
+  const schemaCommonsEnabled = isSchemaCommonsEnabled();
+  if (schemaCommonsEnabled) {
+    const qdrant = new QdrantClient();
+    const qdrantAlive = await qdrant.ping();
+    if (!qdrantAlive) {
+      issues.push({
+        component: 'qdrant',
+        severity: 'warning',
+        message: 'Qdrant not running — schema commons features (match, cohere, ingest) unavailable',
+        fix: 'docker compose up -d (or disable schema commons in config)',
+      });
+    }
 
-  // Check embedder
-  const embedderAlive = await embedderHealthy();
-  if (!embedderAlive) {
-    issues.push({
-      component: 'embedder',
-      severity: 'warning',
-      message: 'Text Embeddings Inference service not running (will use fallback embeddings)',
-      fix: 'docker compose up -d embedder',
-    });
+    // Check embedder
+    const embedderAlive = await embedderHealthy();
+    if (!embedderAlive) {
+      issues.push({
+        component: 'embedder',
+        severity: 'warning',
+        message: 'Text Embeddings Inference service not running (will use fallback embeddings)',
+        fix: 'docker compose up -d embedder',
+      });
+    }
   }
 
   // Check starter pack file exists

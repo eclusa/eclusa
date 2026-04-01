@@ -86,23 +86,57 @@ Parse JSON for `ready` and `issues[]`.
 
 **If not ready:** Display each issue with its `fix` command. The user must resolve blocking issues before continuing. Warn (don't block) for severity=warning issues.
 
-**Check if schema commons is seeded:**
+**Schema Commons (opt-in):**
+
+The schema commons (Qdrant vector DB + typed domain knowledge index) enables pipeline stages
+like `eclusa:match`, `eclusa:cohere`, and `eclusa:ingest`. It is NOT required for the core
+workflow (discuss → plan → execute). Many projects — especially greenfield ones, creative
+projects, or projects with novel domains — don't benefit from it.
+
+**Ask the human — do NOT assume this is needed:**
+
+```
+AskUserQuestion([{
+  question: "Enable schema commons? (Qdrant vector DB for matching against typed API specs, schemas, and domain knowledge)",
+  header: "Schema Commons",
+  multiSelect: false,
+  options: [
+    { label: "Skip (Recommended for most projects)", description: "No Qdrant needed. Use standard discuss → plan → execute workflow. You can enable later." },
+    { label: "Enable", description: "Requires Docker + Qdrant. Adds eclusa:match, eclusa:cohere, eclusa:ingest pipeline stages. Best for API-heavy integration projects." }
+  ]
+}])
+```
+
+**If "Skip":** Continue without schema commons. Set `schema_commons.enabled: false` in config.json.
+The pipeline commands (match, cohere, ingest) will warn if invoked but won't block other workflows.
+
+```bash
+node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-set schema_commons.enabled false
+```
+
+**If "Enable":**
+
+```bash
+node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-set schema_commons.enabled true
+```
+
+Check if Qdrant is running and offer to seed:
 
 ```bash
 SEEDED=$(node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" environment seeded)
 ```
 
-**If not seeded and Qdrant is running:**
+If not seeded, offer starter pack seeding:
 
 ```
 AskUserQuestion([{
-  question: "The schema commons is empty. Seed it with industry standards? (~30 sources: payments, auth, healthcare, music, cloud, etc.)",
+  question: "Seed the schema commons with industry standards? (~30 sources: payments, auth, healthcare, music, cloud, etc.)",
   header: "Starter Pack",
   multiSelect: false,
   options: [
     { label: "Seed All", description: "Download ~30 curated industry schemas from GitHub" },
     { label: "Choose Industries", description: "Pick which industries to seed" },
-    { label: "Skip", description: "Start with an empty commons" }
+    { label: "Skip", description: "Start with an empty commons — add sources manually via eclusa:ingest" }
   ]
 }])
 ```

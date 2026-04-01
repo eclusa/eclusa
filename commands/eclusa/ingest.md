@@ -7,6 +7,26 @@ subagent_type: general-purpose
 
 Manage the Qdrant-backed schema commons. Ingest typed domain knowledge from OpenAPI specs, Prisma schemas, SQL DDL, and other structured sources.
 
+## Prerequisite
+
+Schema commons must be enabled and Qdrant must be running. Check:
+```bash
+SCHEMA_ENABLED=$(node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-get schema_commons.enabled 2>/dev/null || echo "false")
+```
+
+If not enabled, display:
+```
+Schema commons is not enabled for this project.
+
+To enable: node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-set schema_commons.enabled true
+Then start Qdrant: docker compose up -d
+
+Most projects don't need the schema commons — the standard discuss → plan → execute
+workflow works without it. Enable only if your project integrates with typed external
+APIs/schemas and you want automated source matching.
+```
+Exit without proceeding.
+
 ## Subcommands
 
 ### `eclusa:ingest url <url>`

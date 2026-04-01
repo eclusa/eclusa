@@ -15,6 +15,24 @@ Orchestrates the full six-stage eclusa pipeline in sequence. Each stage runs to 
 /eclusa:pipeline --dry-run          # show what would run without executing
 ```
 
+## Prerequisite
+
+The full 6-stage pipeline requires schema commons (Qdrant). Check:
+```bash
+SCHEMA_ENABLED=$(node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-get schema_commons.enabled 2>/dev/null || echo "false")
+```
+
+If not enabled, display:
+```
+The full pipeline (match → cohere → constrain → derive → generate) requires schema commons.
+
+For projects without schema commons, use the standard workflow instead:
+  /eclusa:discuss-phase → /eclusa:plan-phase → /eclusa:execute-phase
+
+To enable schema commons: /eclusa:config
+```
+Exit without proceeding.
+
 ## Behavior
 
 1. **Check state** — Read the project file to determine which stages are complete. If resuming, validate all prerequisite stages are satisfied.

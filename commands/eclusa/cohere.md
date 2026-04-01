@@ -13,6 +13,15 @@ Stage 3. Analyzes the matched source set for coherence issues that would block d
 /eclusa:cohere          # run coherence analysis on current matched sources
 ```
 
+## Prerequisite
+
+Requires schema commons to be enabled (`schema_commons.enabled: true` in config). If not enabled, display:
+```
+Schema commons is not enabled. The cohere command requires matched sources from eclusa:match.
+Enable with: node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-set schema_commons.enabled true
+```
+Exit without proceeding.
+
 ## Behavior
 
 1. **Load matched sources** — Read `sources.matched` from the project file. Fail if match stage has not been completed.

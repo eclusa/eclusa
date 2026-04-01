@@ -14,6 +14,25 @@ Runs pipeline stages 1+2. Extracts domain concepts from the current project requ
 /eclusa:match "auth,billing"    # skip extraction, search these concepts directly
 ```
 
+## Prerequisite
+
+Schema commons must be enabled. Check before proceeding:
+
+```bash
+SCHEMA_ENABLED=$(node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-get schema_commons.enabled 2>/dev/null || echo "false")
+```
+
+**If not enabled:**
+```
+Schema commons is not enabled for this project. The match command requires Qdrant.
+
+To enable: node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-set schema_commons.enabled true
+Then run: docker compose up -d
+
+Or continue without matching — use /eclusa:discuss-phase → /eclusa:plan-phase for the standard workflow.
+```
+Exit. Do not proceed with Qdrant calls.
+
 ## Behavior
 
 1. **Extract concepts** — Read the project requirements file. Identify domain concepts (nouns, bounded contexts, data entities). Present the extracted list to the human for review.
