@@ -126,7 +126,15 @@ checkpoints between tasks. The user can review, modify, or redirect work at any 
    d. **After each task:** Pause briefly. If the user intervenes (types anything), stop and address
       their feedback before continuing. Otherwise proceed to next task.
 
-   e. **After plan complete:** Show results, commit, create SUMMARY.md, then present next plan.
+   e. **After plan complete:** Show results, commit, and track completion:
+      ```bash
+      node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" plan-complete {plan-id} --message "what was built"
+      ```
+      This generates SUMMARY.md and updates roadmap in one call. Then present next plan.
+
+   **IMPORTANT:** This tracking step also applies when the orchestrator executes plans
+   inline due to agent failures, timeouts, or CWD mismatches. Without it, `phase complete`
+   shows wrong plan counts.
 
 3. After all plans: proceed to verification (same as normal mode).
 

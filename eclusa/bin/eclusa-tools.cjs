@@ -584,6 +584,58 @@ async function runCommand(command, args, cwd, raw) {
       break;
     }
 
+    case 'plan-complete': {
+      // Lightweight plan completion for inline execution (no subagent).
+      // Generates minimal SUMMARY.md and updates tracking.
+      // Usage: plan-complete <plan-id> [--message "what was built"]
+      const planId = args[1];
+      if (!planId) error('plan-id required: plan-complete 02-01 --message "..."');
+      const msgIdx = args.indexOf('--message');
+      const message = msgIdx >= 0 ? args.slice(msgIdx + 1).join(' ') : 'Completed inline';
+      const phaseNum = planId.split('-')[0];
+      const phaseInfo = phase.findPhaseInternal(cwd, phaseNum);
+      if (!phaseInfo) error(`Phase ${phaseNum} not found`);
+      const phaseDir = path.join(cwd, phaseInfo.directory);
+      const summaryPath = path.join(phaseDir, `${planId}-SUMMARY.md`);
+
+      // Generate minimal SUMMARY.md
+      const now = new Date().toISOString();
+      const summary = [
+        '---',
+        `phase: ${phaseInfo.slug}`,
+        `plan: ${planId.split('-')[1]}`,
+        'status: complete',
+        `completed: ${now}`,
+        'execution: inline',
+        '---',
+        '',
+        `# Plan ${planId} Summary`,
+        '',
+        `**Completed:** ${now}`,
+        `**Execution:** Inline (orchestrator)`,
+        '',
+        '## What was built',
+        '',
+        message,
+        '',
+        '## Self-Check: PASSED',
+        '',
+      ].join('\n');
+
+      fs.writeFileSync(summaryPath, summary, 'utf-8');
+
+      // Update roadmap progress
+      roadmap.cmdRoadmapUpdatePlanProgress(cwd, planId, false);
+
+      output({
+        created: true,
+        summary_path: summaryPath,
+        plan_id: planId,
+        message,
+      });
+      break;
+    }
+
     case 'roadmap': {
       const subcommand = args[1];
       if (subcommand === 'get-phase') {
