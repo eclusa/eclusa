@@ -107,8 +107,12 @@ If web search is not available, ask the user to provide URLs or file paths for t
 
 /**
  * Write match results to the project file's sources.matched section.
+ *
+ * Accepts two formats:
+ * 1. stageMatch output: [{concept, matches: [{score, source_origin, ...}]}]
+ * 2. Workflow shorthand: {sources: ["origin1"], concepts: ["concept1"]}
  */
-function commitMatches(cwd, matches) {
+function commitMatches(cwd, input) {
   const projectResult = loadProjectFile(cwd);
   if (!projectResult.found || !projectResult.data) {
     return { error: 'No project.eclusa found. Run eclusa:new-project first.' };
@@ -117,9 +121,26 @@ function commitMatches(cwd, matches) {
   const project = projectResult.data;
   if (!project.sources) project.sources = { matched: [], novel: [] };
 
-  // Group matches by source origin
+  // Handle workflow shorthand: {sources: [...], concepts: [...]}
+  if (input && !Array.isArray(input) && input.sources) {
+    project.sources.matched = input.sources.map(origin => ({
+      origin,
+      format: 'unknown',
+      entities: [],
+    }));
+    if (input.concepts) {
+      if (!project.sources.concepts) project.sources.concepts = [];
+      project.sources.concepts = input.concepts;
+    }
+    saveProjectFile(cwd, project);
+    return { sources_matched: project.sources.matched.length };
+  }
+
+  // Handle stageMatch output: [{concept, matches: [{score, source_origin, ...}]}]
+  const matches = Array.isArray(input) ? input : [];
   const byOrigin = {};
   for (const result of matches) {
+    if (!result.matches) continue;
     for (const match of result.matches) {
       if (match.score < 0.3) continue; // Skip low-confidence matches
       if (!byOrigin[match.source_origin]) {

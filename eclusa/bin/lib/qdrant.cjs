@@ -74,8 +74,16 @@ class QdrantClient {
   /** Check if Qdrant is reachable. */
   async ping() {
     try {
-      await this.request('GET', '/healthz');
-      return true;
+      // /healthz returns plain text, not JSON — use raw HTTP check instead of this.request()
+      return new Promise((resolve) => {
+        const url = new URL('/healthz', this.baseUrl);
+        const req = http.get({ hostname: url.hostname, port: url.port, path: url.pathname, timeout: 5000 }, (res) => {
+          res.resume(); // drain response
+          resolve(res.statusCode >= 200 && res.statusCode < 300);
+        });
+        req.on('error', () => resolve(false));
+        req.on('timeout', () => { req.destroy(); resolve(false); });
+      });
     } catch {
       return false;
     }

@@ -240,7 +240,17 @@ function cmdPipelineState(cwd) {
 }
 
 function cmdPipelineUpdate(cwd, stageName, statusJson) {
-  const update = JSON.parse(statusJson || '{}');
+  if (!stageName) {
+    error('Usage: pipeline update <stage> \'{"status":"completed"}\'');
+    return;
+  }
+  let update;
+  try {
+    update = JSON.parse(statusJson || '{}');
+  } catch (e) {
+    error(`Invalid JSON for pipeline update: ${e.message}`);
+    return;
+  }
   const result = updatePipelineStage(cwd, stageName, update);
   output(result);
 }
