@@ -888,4 +888,5 @@ When any phase operation fails or a blocker is detected, present 3 options via A
 - [ ] Frontend phases get UI review audit after successful execution (step 3d.5) if UI-SPEC exists
 - [ ] UI phase and UI review respect workflow.ui_phase and workflow.ui_review config toggles
 - [ ] UI review is advisory (non-blocking) — phase proceeds to iterate regardless of score
+- [ ] Pipeline stages run inline during plan-phase (step 4.5) when schema_commons.enabled — autonomous does NOT need to invoke pipeline separately
 </success_criteria>

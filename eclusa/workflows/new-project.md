@@ -86,32 +86,20 @@ Parse JSON for `ready` and `issues[]`.
 
 **If not ready:** Display each issue with its `fix` command. The user must resolve blocking issues before continuing. Warn (don't block) for severity=warning issues.
 
-**Schema Commons (opt-in):**
+**Schema Commons (enabled by default):**
 
-The schema commons (Qdrant vector DB + typed domain knowledge index) enables pipeline stages
-like `eclusa:match`, `eclusa:cohere`, and `eclusa:ingest`. It is NOT required for the core
-workflow (discuss → plan → execute). Many projects — especially greenfield ones, creative
-projects, or projects with novel domains — don't benefit from it.
-
-**Ask the human — do NOT assume this is needed:**
+The schema commons (Qdrant vector DB + typed domain knowledge index) powers the full eclusa pipeline: match → cohere → constrain → derive → generate. This is the **intended workflow** — type-checked constraints and derived tests catch integration issues before they reach execution.
 
 ```
 AskUserQuestion([{
-  question: "Enable schema commons? (Qdrant vector DB for matching against typed API specs, schemas, and domain knowledge)",
+  question: "Schema commons is enabled by default. It powers the full pipeline (match → cohere → constrain → derive → generate) for type-checked constraints and derived tests.",
   header: "Schema Commons",
   multiSelect: false,
   options: [
-    { label: "Skip (Recommended for most projects)", description: "No Qdrant needed. Use standard discuss → plan → execute workflow. You can enable later." },
-    { label: "Enable", description: "Requires Docker + Qdrant. Adds eclusa:match, eclusa:cohere, eclusa:ingest pipeline stages. Best for API-heavy integration projects." }
+    { label: "Enable (Recommended)", description: "Requires Docker + Qdrant. Full pipeline: match schemas, check coherence, compile constraints, derive tests, generate code." },
+    { label: "Disable", description: "⚠ Not the intended workflow. Skips pipeline stages — plans won't have type-checked constraints or derived tests. You can re-enable later." }
   ]
 }])
-```
-
-**If "Skip":** Continue without schema commons. Set `schema_commons.enabled: false` in config.json.
-The pipeline commands (match, cohere, ingest) will warn if invoked but won't block other workflows.
-
-```bash
-node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-set schema_commons.enabled false
 ```
 
 **If "Enable":**
@@ -119,6 +107,25 @@ node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-set schema_commons.enabl
 ```bash
 node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-set schema_commons.enabled true
 ```
+
+**If "Disable":**
+
+Display hard warning:
+```
+⚠ Schema commons disabled. The eclusa pipeline (match → cohere → constrain → derive → generate)
+will be skipped during planning. Plans will be created without type-checked constraints or
+derived test suites. This is NOT the intended eclusa workflow.
+
+Re-enable at any time: node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-set schema_commons.enabled true
+```
+
+```bash
+node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-set schema_commons.enabled false
+```
+
+Continue without schema commons. Skip to Step 2 (Brownfield Offer).
+
+**If "Enable" (continued):**
 
 Check if Qdrant is running and offer to seed:
 

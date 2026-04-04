@@ -27,7 +27,7 @@ const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com';
 
 /**
  * Check if schema commons (Qdrant) is enabled for this project.
- * Defaults to false — the human must opt in during /eclusa:new-project.
+ * Defaults to true — the human must explicitly opt out during /eclusa:new-project.
  * Checks .eclusa/config.json > schema_commons.enabled
  */
 function isSchemaCommonsEnabled() {
@@ -36,16 +36,18 @@ function isSchemaCommonsEnabled() {
     const configPath = path.join(process.cwd(), '.eclusa', 'config.json');
     if (fs.existsSync(configPath)) {
       const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      if (config.schema_commons && config.schema_commons.enabled === false) return false;
       if (config.schema_commons && config.schema_commons.enabled === true) return true;
     }
     // Check global config
     const globalPath = path.join(require('os').homedir(), '.eclusa', 'config.json');
     if (fs.existsSync(globalPath)) {
       const config = JSON.parse(fs.readFileSync(globalPath, 'utf-8'));
+      if (config.schema_commons && config.schema_commons.enabled === false) return false;
       if (config.schema_commons && config.schema_commons.enabled === true) return true;
     }
   } catch (_) {}
-  return false;
+  return true;
 }
 
 // ─── Environment Check ──────────────────────────────────────────────────────

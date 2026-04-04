@@ -315,6 +315,43 @@ Commit the codebase map:
 node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" commit "docs: map existing codebase" --files .eclusa/codebase/*.md
 ```
 
+Continue to auto_ingest.
+</step>
+
+<step name="auto_ingest">
+Auto-ingest typed schemas from the codebase into the schema commons (Qdrant). This populates the pipeline with the project's own schemas — Prisma files, SQL DDL, OpenAPI specs, GraphQL schemas, etc.
+
+**Check if Qdrant is available** (schema commons may not be configured yet if map-codebase runs before new-project):
+
+```bash
+QDRANT_OK=$(node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" environment check 2>/dev/null | node -e "try{const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));process.stdout.write(d.ready?'true':'false')}catch{process.stdout.write('false')}" 2>/dev/null || echo "false")
+```
+
+**If Qdrant is running (`QDRANT_OK` is `true`):**
+
+```bash
+INGEST_RESULT=$(node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" ingest scan . 2>&1)
+```
+
+Display results:
+```
+Auto-ingested codebase schemas into schema commons:
+{INGEST_RESULT}
+```
+
+If the ingest found 0 files, display:
+```
+No typed schemas found in codebase (OpenAPI, Prisma, SQL DDL).
+Schema commons will be populated from external sources during /eclusa:match.
+```
+
+**If Qdrant is NOT running:**
+
+```
+Auto-ingest skipped — Qdrant not running.
+Schemas will be ingested when schema commons is enabled during /eclusa:new-project.
+```
+
 Continue to offer_next.
 </step>
 

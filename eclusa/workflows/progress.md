@@ -47,6 +47,8 @@ If missing both ROADMAP.md and PROJECT.md: suggest `/eclusa:new-project`.
 Instead of reading full files, use targeted tools to get only the data needed for the report:
 - `ROADMAP=$(node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" roadmap analyze)`
 - `STATE=$(node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" state-snapshot)`
+- `SCHEMA_ENABLED=$(node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-get schema_commons.enabled 2>/dev/null || echo "true")`
+- If `SCHEMA_ENABLED` is `"true"`: `PIPELINE_STATE=$(node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" pipeline state 2>/dev/null)`
 
 This minimizes orchestrator context usage.
 </step>
@@ -113,6 +115,7 @@ Present:
 Phase [N] of [total]: [phase-name]
 Plan [M] of [phase-total]: [status]
 CONTEXT: [✓ if has_context | - if not]
+PIPELINE: [stage status from PIPELINE_STATE — e.g. "match ✓ | cohere ✓ | constrain → | derive ○ | generate ○" or "disabled" if SCHEMA_ENABLED is false]
 
 ## Key Decisions Made
 - [extract from $STATE.decisions[]]

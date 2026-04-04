@@ -15,10 +15,10 @@ Stage 3. Analyzes the matched source set for coherence issues that would block d
 
 ## Prerequisite
 
-Requires schema commons to be enabled (`schema_commons.enabled: true` in config). If not enabled, display:
+Requires schema commons to be enabled (`schema_commons.enabled: true` in config, which is the default). If explicitly disabled, display:
 ```
-Schema commons is not enabled. The cohere command requires matched sources from eclusa:match.
-Enable with: node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-set schema_commons.enabled true
+Schema commons is disabled. The cohere command requires matched sources from eclusa:match.
+Re-enable: node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-set schema_commons.enabled true
 ```
 Exit without proceeding.
 

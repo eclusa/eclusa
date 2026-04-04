@@ -37,7 +37,7 @@ Parse JSON for: `researcher_model`, `planner_model`, `checker_model`, `research_
 
 ## 2. Parse and Normalize Arguments
 
-Extract from $ARGUMENTS: phase number (integer or decimal like `2.1`), flags (`--research`, `--skip-research`, `--gaps`, `--skip-verify`, `--prd <filepath>`, `--reviews`, `--text`).
+Extract from $ARGUMENTS: phase number (integer or decimal like `2.1`), flags (`--research`, `--skip-research`, `--gaps`, `--skip-verify`, `--skip-pipeline`, `--prd <filepath>`, `--reviews`, `--text`).
 
 Set `TEXT_MODE=true` if `--text` is present in $ARGUMENTS OR `text_mode` from init JSON is `true`. When `TEXT_MODE` is active, replace every `AskUserQuestion` call with a plain-text numbered list and ask the user to type their choice number. This is required for Claude Code remote sessions (`/rc` mode) where TUI menus don't work through the Claude App.
 
@@ -232,6 +232,227 @@ If "Run discuss-phase first":
   ```
   **Exit the plan-phase workflow. Do not continue.**
 
+## 4.5. Pipeline Integration (Schema Commons)
+
+**Skip if:** `--skip-pipeline` flag, `--gaps` flag, or `--prd` flag.
+
+```bash
+SCHEMA_ENABLED=$(node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-get schema_commons.enabled 2>/dev/null || echo "true")
+```
+
+**If SCHEMA_ENABLED is `"false"`:** Skip to step 5.
+
+**If `--skip-pipeline` flag is present:**
+
+Display hard warning:
+```
+⚠ Pipeline skipped. The schema commons pipeline (match → cohere → constrain → derive → generate)
+is the intended eclusa workflow. Plans will be created without type-checked constraints or
+derived test suites. This may result in implementation gaps that would otherwise be caught.
+
+Re-enable: remove --skip-pipeline flag.
+```
+
+Skip to step 5.
+
+**Check pipeline state:**
+
+```bash
+PIPELINE_STATE=$(node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" pipeline state 2>/dev/null)
+```
+
+Parse JSON. If all stages (match, coherence, formalize, derive, generate) have `status: "completed"`:
+Display `Pipeline complete for Phase {X}` and skip to step 5.
+
+**If pipeline needs to run:**
+
+Display banner:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ Eclusa ► PIPELINE — PHASE {X}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### 4.5.1 Scope Selection
+
+If `TEXT_MODE` is true, present as a plain-text numbered list:
+```
+Pipeline scope for Phase {X}: {phase_name}?
+
+1. Phase-level (Recommended) — Match concepts from this phase's requirements and context only
+2. Project-level — Match all concepts from REQUIREMENTS.md. Better for small projects or when you want to reason holistically about the full domain.
+
+Enter number:
+```
+
+Otherwise:
+```
+AskUserQuestion([{
+  question: "Pipeline scope for Phase {X}: {phase_name}?",
+  header: "Schema Commons Pipeline",
+  multiSelect: false,
+  options: [
+    { label: "Phase-level (Recommended)", description: "Match concepts from this phase's requirements and context only" },
+    { label: "Project-level", description: "Match all concepts from REQUIREMENTS.md. Better for small projects or when you want to reason holistically about the full domain." }
+  ]
+}])
+```
+
+If auto mode: select "Phase-level" by default.
+
+### 4.5.2 Stage 1+2: Match
+
+**Extract concepts:**
+- If scope is "Phase-level": Extract domain concepts (nouns, bounded contexts, data entities) from phase CONTEXT.md and the phase's requirement IDs in ROADMAP.md.
+- If scope is "Project-level": Extract from full REQUIREMENTS.md.
+
+```bash
+node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" pipeline match '["concept1","concept2","concept3"]'
+```
+
+Parse results. Present matched sources to human for confirmation.
+
+Handle gaps — concepts with no strong matches:
+- Offer to research (WebSearch for specs, then `ingest url <found-url>`, re-match)
+- Or mark as novel (genuinely new domain concepts)
+
+Commit confirmed matches:
+```bash
+node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" pipeline match-commit '{"sources":["source1","source2"],"concepts":["concept1","concept2"]}'
+node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" pipeline update match '{"status":"completed"}'
+```
+
+If auto mode: auto-confirm top-scoring matches, auto-research gaps, log decisions.
+
+### 4.5.3 Stage 3: Coherence
+
+```bash
+node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" pipeline coherence
+```
+
+Present findings — type boundary conflicts, auth model incompatibilities, data model friction, missing links.
+
+For each **blocking** issue, human must:
+- Go back to match to add/remove sources
+- Accept with explicit rationale
+- Escalate to `/eclusa:decide`
+
+For **warning** issues: note and continue.
+
+```bash
+node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" pipeline update coherence '{"status":"completed"}'
+```
+
+If auto mode: auto-accept warnings, cascade blocking issues to user.
+
+### 4.5.4 Stage 4: Constrain
+
+Scaffold Haskell type modules from matched source schemas:
+```bash
+node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" pipeline formalize
+```
+
+Draft constraint functions encoding business rules from source specs, coherence report, and requirements.
+
+Compile check:
+```bash
+node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" pipeline check-constraints
+```
+
+**Iterate on GHC failures** (max 5 iterations):
+- Parse GHC error output
+- Fix type errors in constraints or type modules
+- Re-run `pipeline check-constraints`
+
+**If compilation fails after 5 iterations — cascade to user:**
+
+```
+AskUserQuestion([{
+  question: "Constraint compilation failed after 5 iterations. How to proceed?",
+  header: "⚠ Constraint Failure",
+  multiSelect: false,
+  options: [
+    { label: "Show errors — I'll help fix", description: "Display GHC errors for manual resolution" },
+    { label: "Skip constraints — continue without", description: "⚠ Not recommended. Plans will lack type-checked constraints. Derive and generate stages will be skipped." },
+    { label: "Escalate to /eclusa:decide", description: "Record as pending decision and continue planning without constraints" }
+  ]
+}])
+```
+
+If "Show errors": Display full GHC output. Wait for user input. Resume iteration loop.
+If "Skip constraints": Set `PIPELINE_PARTIAL=true`. Display hard warning:
+```
+⚠ Constraints skipped. Derive and generate stages will also be skipped.
+Plans will be created without type-checked constraints or derived test suites.
+This is NOT the intended eclusa workflow.
+```
+Skip to step 5.
+If "Escalate": Record decision via `node ... pipeline update formalize '{"status":"blocked"}'`. Skip to step 5.
+
+**If compilation succeeds:**
+
+Present final constraint set to human for review. Each constraint shows: name, source rule, Haskell signature, plain-English description.
+
+```bash
+node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" pipeline update formalize '{"status":"completed"}'
+```
+
+### 4.5.5 Stage 5: Derive
+
+**Skip if:** `PIPELINE_PARTIAL` is true.
+
+```bash
+node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" pipeline derive
+```
+
+Present test suite summary: total tests, breakdown by category (template-driven, constraint-driven, edge cases), coverage check (every constraint has tests, every source has integration test).
+
+Human reviews and approves.
+
+```bash
+node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" pipeline update derive '{"status":"completed"}'
+```
+
+If auto mode: auto-approve if coverage passes, cascade coverage gaps to user.
+
+### 4.5.6 Stage 6: Generate
+
+**Skip if:** `PIPELINE_PARTIAL` is true.
+
+```bash
+node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" pipeline generate
+```
+
+Generate implementation code module-by-module against derived test suite. Iterate on failures (max 10 iterations per test, then escalate).
+
+```bash
+node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" pipeline update generate '{"status":"completed"}'
+```
+
+### 4.5.7 Pipeline Complete
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ Eclusa ► PIPELINE COMPLETE ✓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Stages: {completed}/{total}
+Matched sources: [list]
+Constraints: [count] compiled
+Derived tests: [count]
+Generated stubs: [file list]
+
+Pipeline outputs will inform research and planning.
+```
+
+Store pipeline output paths for use in steps 5 and 8:
+- `PIPELINE_SOURCES` — matched source descriptions
+- `PIPELINE_CONSTRAINTS` — path to constraints.hs
+- `PIPELINE_TESTS` — path to derived test suite
+- `PIPELINE_CODE` — paths to generated code stubs
+
+Continue to step 5.
+
 ## 5. Handle Research
 
 **Skip if:** `--gaps` flag or `--skip-research` flag or `--reviews` flag.
@@ -310,6 +531,21 @@ ${AGENT_SKILLS_RESEARCHER}
 **Project instructions:** Read ./CLAUDE.md if exists — follow project-specific guidelines
 **Project skills:** Check .claude/skills/ or .agents/skills/ directory (if either exists) — read SKILL.md files, research should account for project skill patterns
 </additional_context>
+
+<pipeline_context condition="PIPELINE_SOURCES is set">
+**Pipeline completed for this phase.** The following artifacts already exist — research should focus on areas NOT covered by the pipeline (implementation patterns, architecture decisions, library choices):
+
+- **Matched sources:** {PIPELINE_SOURCES} — typed schemas already matched against domain concepts
+- **Compiled constraints:** {PIPELINE_CONSTRAINTS} — Haskell type-checked business rules
+- **Derived test suite:** {PIPELINE_TESTS} — BDD/E2E tests derived from constraints
+- **Generated code stubs:** {PIPELINE_CODE} — implementation starting points
+
+Do NOT re-research topics covered by matched source schemas. Focus on:
+- Implementation patterns and architecture for integrating pipeline-generated code
+- Libraries/frameworks for the target language (the pipeline generates typed specs, not runtime code)
+- How to connect generated stubs to the rest of the application
+- Edge cases or domain nuances not captured in formal schemas
+</pipeline_context>
 
 <output>
 Write to: {phase_dir}/{phase_num}-RESEARCH.md
@@ -488,6 +724,8 @@ Planner prompt:
 - {uat_path} (UAT Gaps - if --gaps)
 - {reviews_path} (Cross-AI Review Feedback - if --reviews)
 - {UI_SPEC_PATH} (UI Design Contract — visual/interaction specs, if exists)
+- {PIPELINE_CONSTRAINTS} (Compiled Haskell constraints — if pipeline ran)
+- {PIPELINE_TESTS} (Derived test suite — if pipeline ran)
 </files_to_read>
 
 ${AGENT_SKILLS_PLANNER}
@@ -496,6 +734,17 @@ ${AGENT_SKILLS_PLANNER}
 
 **Project instructions:** Read ./CLAUDE.md if exists — follow project-specific guidelines
 **Project skills:** Check .claude/skills/ or .agents/skills/ directory (if either exists) — read SKILL.md files, plans should account for project skill rules
+
+<pipeline_integration condition="PIPELINE_SOURCES is set">
+**Pipeline completed for this phase.** Plans MUST integrate pipeline outputs:
+
+- **Derived test suite** ({PIPELINE_TESTS}): Use as acceptance criteria. Every plan that implements pipeline-covered functionality MUST reference the relevant derived tests in its `<acceptance_criteria>`. These tests are already type-checked — they are the ground truth.
+- **Generated code stubs** ({PIPELINE_CODE}): Use as starting points. Plans should build on generated stubs, not replace them. Reference specific generated files in `<read_first>` sections.
+- **Compiled constraints** ({PIPELINE_CONSTRAINTS}): Any implementation MUST satisfy all compiled constraints. Include constraint names in `<acceptance_criteria>` where relevant.
+- **Matched sources** ({PIPELINE_SOURCES}): Plans that touch external integrations MUST reference the matched source schemas for type-correct API calls.
+
+Plans that ignore pipeline outputs when they exist will fail the plan checker.
+</pipeline_integration>
 </planning_context>
 
 <downstream_consumer>

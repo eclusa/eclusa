@@ -7,11 +7,17 @@ subagent_type: eclusa-planner
 
 Orchestrates the full six-stage eclusa pipeline in sequence. Each stage runs to completion, presents results for human review, and only advances after explicit approval. Any stage can cascade decisions up to `/eclusa:decide`.
 
+**Note:** The pipeline is now **inline in the cascade by default**. When `schema_commons.enabled` is `true` (the default), `/eclusa:plan-phase` automatically runs the pipeline before planning (step 4.5). This standalone command is for:
+- Running the pipeline independently of plan-phase
+- Resuming a partially completed pipeline
+- Running at project-level scope (all concepts, not just current phase)
+
 ## Usage
 
 ```
 /eclusa:pipeline                    # start from stage 1 (or resume from last completed)
 /eclusa:pipeline --from=cohere      # resume from a specific stage
+/eclusa:pipeline --phase N          # run for a specific phase's concepts only
 /eclusa:pipeline --dry-run          # show what would run without executing
 ```
 
@@ -19,17 +25,17 @@ Orchestrates the full six-stage eclusa pipeline in sequence. Each stage runs to 
 
 The full 6-stage pipeline requires schema commons (Qdrant). Check:
 ```bash
-SCHEMA_ENABLED=$(node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-get schema_commons.enabled 2>/dev/null || echo "false")
+SCHEMA_ENABLED=$(node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-get schema_commons.enabled 2>/dev/null || echo "true")
 ```
 
 If not enabled, display:
 ```
-The full pipeline (match → cohere → constrain → derive → generate) requires schema commons.
+Schema commons is disabled. The pipeline (match → cohere → constrain → derive → generate) is
+the intended eclusa workflow. Plans created without the pipeline lack type-checked constraints
+and derived test suites.
 
-For projects without schema commons, use the standard workflow instead:
-  /eclusa:discuss-phase → /eclusa:plan-phase → /eclusa:execute-phase
-
-To enable schema commons: /eclusa:config
+Re-enable: node "$HOME/.claude/eclusa/bin/eclusa-tools.cjs" config-set schema_commons.enabled true
+Then start Qdrant: docker compose up -d
 ```
 Exit without proceeding.
 
