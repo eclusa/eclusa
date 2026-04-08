@@ -7,6 +7,7 @@ commands.html
 
 # Local test installs
 .claude/
+.codex/
 
 # Build artifacts (committed to npm, not git)
 hooks/dist/
@@ -21,7 +22,6 @@ animation/
 # Internal planning documents
 reports/
 RAILROAD_ARCHITECTURE.md
-.eclusa/
 analysis/
 docs/Eclusa-MASTER-ARCHITECTURE.md
 docs/Eclusa-RUST-IMPLEMENTATION-GUIDE.md
@@ -39,7 +39,6 @@ philosophy.md
 .bg-shell/
 
 # ── Eclusa baseline (auto-generated) ──
-.eclusa
 Thumbs.db
 *.swp
 *.swo
@@ -62,3 +61,11 @@ vendor/
 *.log
 .cache/
 tmp/
+
+# Runtime workspaces (generated code, Docker artifacts)
+workspaces/
+
+# RFC drafts
+1-rfc-*.md
+2fc-*.md
+3-rfc-*.md

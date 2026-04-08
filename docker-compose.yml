@@ -1,53 +1,159 @@
-# Eclusa infrastructure
-# Start with: docker compose up -d
-# Or via: npx eclusa (auto-starts)
-#
-# Services:
-#   qdrant    — Vector database for the schema commons (port 6333)
-#   embedder  — HuggingFace Text Embeddings Inference (port 8081)
-#   ghc       — Haskell compiler for constraint type-checking
-
 services:
-  qdrant:
-    image: qdrant/qdrant:latest
-    ports:
-      - "6333:6333"
-      - "6334:6334"
-    volumes:
-      - qdrant_data:/qdrant/storage
+  db:
+    image: paradedb/paradedb:latest
     environment:
-      - QDRANT__SERVICE__GRPC_PORT=6334
+      POSTGRES_USER: eclusa
+      POSTGRES_PASSWORD: eclusa
+      POSTGRES_DB: eclusa
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      test: ["CMD-SHELL", "pg_isready -U eclusa -d eclusa"]
       interval: 5s
-      timeout: 3s
-      retries: 5
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
-  embedder:
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.6
-    ports:
-      - "8081:80"
+  proxy:
+    image: mitmproxy/mitmproxy:latest
+    command:
+      - mitmdump
+      - -s
+      - /app/proxy/addon.py
+      - --listen-port
+      - "8080"
+      - --listen-host
+      - 0.0.0.0
+      - --set
+      - block_global=false
     volumes:
-      - embedder_cache:/data
-    environment:
-      - MODEL_ID=BAAI/bge-small-en-v1.5
+      - .:/app
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import socket; s=socket.create_connection(('127.0.0.1', 8080), 2); s.close()\"",
+        ]
       interval: 5s
-      timeout: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      - sh
+      - -ec
+      - |
+          until pg_isready -h db -U eclusa -d eclusa >/dev/null 2>&1; do
+            echo "Waiting for db..."
+            sleep 1
+          done
+          echo "Running alembic migrations..."
+          python -c 'from alembic import command; from alembic.config import Config; config = Config("alembic.ini"); config.set_main_option("sqlalchemy.url", "postgresql+asyncpg://eclusa:eclusa@db:5432/eclusa"); command.upgrade(config, "head")'
+          echo "Starting web API..."
+          exec uvicorn adapters.web.app:create_app --factory --host 0.0.0.0 --port 8800 --workers 1
+    ports:
+      - "8800:8800"
+    depends_on:
+      db:
+        condition: service_healthy
+      proxy:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://eclusa:eclusa@db:5432/eclusa
+      JWT_SECRET: eclusa-dev-secret-0123456789012345678901234
+      OPENAI_BASE_URL: https://api.z.ai/api/coding/paas/v4
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OPENAI_API_KEY in .env}
+      DEFAULT_MODEL: openai:glm-5.1
+      HTTP_PROXY: http://proxy:8080
+      HTTPS_PROXY: http://proxy:8080
+      NO_PROXY: localhost,127.0.0.1,db,web,ui,api.z.ai
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8800/healthz >/dev/null"]
+      interval: 10s
+      timeout: 5s
       retries: 10
       start_period: 30s
 
-  ghc:
-    image: haskell:9.8-slim
+  executor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command:
+      - sh
+      - -ec
+      - |
+          exec python -c 'import asyncio, os, logging; logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s"); from executor import run_executor; asyncio.run(run_executor("postgresql://eclusa:eclusa@db:5432/eclusa", "postgresql://eclusa:eclusa@db:5432/eclusa", os.environ.get("ACTOR_ID", "system-executor")))'
+    depends_on:
+      db:
+        condition: service_healthy
+      proxy:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://eclusa:eclusa@db:5432/eclusa
+      ACTOR_ID: system-executor
+      PYTHONUNBUFFERED: "1"
+      OPENAI_BASE_URL: https://api.z.ai/api/coding/paas/v4
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OPENAI_API_KEY in .env}
+      DEFAULT_MODEL: openai:glm-5.1
+      SCC_MODEL_DEFAULT: openai:glm-5.1
+      # Per-stage overrides — uncomment and set to override a specific stage:
+      # SCC_MODEL_REFINE: openai:glm-5.1
+      # SCC_MODEL_FANOUT: openai:glm-5.1
+      # SCC_MODEL_MATCH: openai:glm-5.1
+      # SCC_MODEL_COHERE: openai:glm-5.1
+      # SCC_MODEL_FORMALIZE: openai:glm-5.1
+      # SCC_MODEL_DERIVE: openai:glm-5.1
+      # SCC_MODEL_GENERATE: openai:glm-5.1
+      HTTP_PROXY: http://proxy:8080
+      HTTPS_PROXY: http://proxy:8080
+      NO_PROXY: localhost,127.0.0.1,db,web,ui,api.z.ai
     volumes:
-      - ./constraints:/workspace/constraints
-    working_dir: /workspace
-    # Stays running so eclusa:constrain can exec into it
+      - ghc_workspace:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./workspaces:/app/workspaces
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h db -U eclusa -d eclusa"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    ports:
+      - "8000:80"
+    depends_on:
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  ghc:
+    image: haskell:9.10.1
+    container_name: ghc-sidecar
     command: ["sleep", "infinity"]
-    profiles:
-      - constrain
+    volumes:
+      - ghc_workspace:/workspace
+    restart: unless-stopped
 
 volumes:
-  qdrant_data:
-  embedder_cache:
+  pg_data:
+  ghc_workspace:

@@ -1,163 +1,116 @@
-```
-   ███████╗ ██████╗██╗     ██╗   ██╗███████╗ █████╗
-   ██╔════╝██╔════╝██║     ██║   ██║██╔════╝██╔══██╗
-   █████╗  ██║     ██║     ██║   ██║███████╗███████║
-   ██╔══╝  ██║     ██║     ██║   ██║╚════██║██╔══██║
-   ███████╗╚██████╗███████╗╚██████╔╝███████║██║  ██║
-   ╚══════╝ ╚═════╝╚══════╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝
-   ━━━╋━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━
-```
+# Eclusa
 
-**From noisy intent to constrained, test-backed code.**
+An evergreen company operating system. Not an AI coding tool. Not a workflow engine. The nervous system of an organization — where intents enter as ambiguity and exit as traced artifacts.
 
-Eclusa is a pipeline that narrows ambiguity at every stage before an LLM writes a single line of implementation code. Domain schemas are matched from a curated knowledge base. Source composition is verified. Business rules are formalized as Haskell types and compiled by GHC. Tests are derived from the compiled constraints. Code is generated against tests it didn't write, constrained by types it didn't define, over domain knowledge it didn't invent.
+Competitive frame: Jira, Linear, Notion — not LangGraph, CrewAI, or Cursor.
 
-What can't be resolved at any stage cascades upward until it reaches a human.
+80% of users never open Eclusa directly. They interact through Slack, WhatsApp, email, Figma, webhooks. The integration layer is the product surface.
 
-## How It Works
+## What it does
 
-Eclusa has two systems that are now one flow: a **coordination layer** that breaks work into phases and plans, and a **narrowing pipeline** that type-checks the domain before planning begins. The pipeline runs inline — when you plan a phase, the pipeline runs first.
+Someone types _"I want a simple blog where I can write posts and people can read them"_ into Slack (or the API, or WhatsApp). Eclusa:
 
-```
-new-project → discuss-phase → [pipeline] → plan-phase → execute-phase → verify
-                                  │
-                    match → cohere → constrain → derive → generate
-```
+1. **Refines** the intent — an AI asks clarifying questions until scope is clear
+2. **Validates** — multiple models independently check if the refined scope matches the original ask
+3. **Matches** against existing knowledge — do we already have something related?
+4. **Checks coherence** — does this contradict anything we know?
+5. **Formalizes** constraints into verifiable specifications (Haskell types, checked by GHC — the compiler doesn't hallucinate)
+6. **Derives** test cases — an agent with workspace tools writes real pytest files
+7. **Generates** implementation — an agent writes code, runs tests, fixes errors, iterates
+8. **Ships** — commits to git, builds a Docker image, deploys a running container
 
-### The Coordination Layer
+Every step is traced. Every decision is in the ledger. The artifact chain goes from the running container all the way back to the original Slack message.
 
-Multi-turn questioning extracts what you actually want to build. Research agents investigate the ecosystem. Phases are scoped, planned with atomic tasks, executed by parallel agents, and verified against the original goal.
+## Design philosophy
 
-Each phase goes through: **discuss** (surface decisions) → **plan** (atomic plans with acceptance criteria) → **execute** (parallel agents, wave-based) → **verify** (goal-backward checking). The orchestrator stays lean — subagents do the heavy work with fresh context windows.
-
-### The Narrowing Pipeline
-
-Six stages. Each narrows what the next stage can do. Each has a structural gate. No agent evaluates its own output. The pipeline runs automatically before planning when the schema commons is enabled (the default).
-
-```
-REFINE → MATCH → COHERENCE → FORMALIZE → DERIVE → GENERATE
-```
-
-| Stage | What happens | Gate |
-|-------|-------------|------|
-| **Refine** | Multi-turn questioning narrows a fuzzy idea into precise scope. Research agents investigate the ecosystem. | Human confirms scope |
-| **Match** | Domain concepts extracted from phase context, matched against the Schema Commons — a Qdrant-backed index of typed domain knowledge. Unmatched concepts trigger web research and ingestion on demand. | Human confirms matches |
-| **Coherence** | Matched sources checked for composition issues — type boundaries, auth model conflicts, data friction, missing relational links. | No blocking incompatibilities |
-| **Formalize** | Haskell type modules auto-generated from matched sources. LLM drafts constraint functions from business rules. `ghc -fno-code` type-checks. The compiler doesn't hallucinate. | GHC accepts |
-| **Derive** | Tests derived from source specs + compiled constraints. Template-driven where patterns are standard, LLM-generated for edge cases. | Tests internally consistent |
-| **Generate** | Cheapest capable model generates code against tests it didn't write. | All tests pass |
-
-Pipeline outputs (matched sources, compiled constraints, derived tests, generated stubs) feed directly into the planner. Plans reference derived tests as acceptance criteria and generated code as starting points.
-
-## The Schema Commons
-
-A Qdrant vector database of typed domain knowledge. Three layers:
-
-**Interfaces** — Typed schemas from real industry standards. OpenAPI, Protobuf, GraphQL, SQL DDL, Prisma, TypeScript, JSON Schema, XSD. 45 curated sources across 25 industries: payments (Stripe, Moov), healthcare (HL7 FHIR, HAPI), music (DDEX, MusicBrainz), finance (ISO 20022, Open Banking UK), ecommerce (Medusa, Saleor), identity (Ory Kratos, Keycloak), cloud (Kubernetes, CloudEvents, Terraform), messaging (Twilio, Discord), observability (OpenTelemetry), and more.
-
-**Behaviors** — Business rules extracted as structured English: *"For any Subscription s where days_past_due(s) >= 30: transition(s, canceled)."* Declarative statements about how the domain works, extracted from documentation and industry standards.
-
-**Decisions** — Architectural knowledge: when to use what, and why. *"Given: stateless HTTP, <100 RPS, small team. Prefer: Fly.io over Kubernetes. Because: operational overhead exceeds value below this scale."*
-
-The schema commons is enabled by default. On first project init, eclusa offers to seed it with the 45 curated industry sources. For brownfield projects, `map-codebase` auto-ingests existing typed schemas (Prisma, SQL DDL, OpenAPI) from your codebase into Qdrant.
-
-When the pipeline hits a concept not in the commons, it tells the agent to research it via web search, ingest what it finds, and re-match.
-
-## Why Haskell?
-
-Stage 4 uses GHC as a gate. TypeScript's type system is intentionally unsound — `any`, type assertions, structural subtyping with escape hatches. When an LLM drafts a constraint, it can accidentally use an escape hatch, and `tsc --noEmit` will say "looks fine" when it isn't.
-
-GHC's type system is sound. If it compiles, the types are correct. There's no `any`. If the LLM writes a constraint that references a field that doesn't exist on the matched source type, it won't compile. That's a real signal.
-
-`ghc -fno-code`: one binary, one flag, no ecosystem. The constraint files never run. They're specifications that GHC verifies. Ships in the eclusa Docker Compose stack.
-
-## Install
-
-```bash
-npx eclusa
-```
-
-Installs eclusa into your AI coding agent. Supports Claude Code, OpenCode, Gemini CLI, Codex, GitHub Copilot, Cursor, Windsurf, and Antigravity.
-
-Run `/eclusa:new-project` to start.
-
-For the full pipeline infrastructure (Qdrant + embeddings + GHC):
-
-```bash
-docker compose up -d                          # Qdrant + embedder
-docker compose --profile constrain up -d      # + GHC 9.8 for type-checking
-```
-
-## Commands
-
-68 commands across four areas. Run `/eclusa:help` for the full list.
-
-### Pipeline
-| Command | What it does |
-|---------|-------------|
-| `/eclusa:match` | Extract domain concepts, query Schema Commons, confirm matches |
-| `/eclusa:cohere` | Check matched sources compose without conflicts |
-| `/eclusa:constrain` | Scaffold Haskell types + constraints, iterate until GHC accepts |
-| `/eclusa:derive` | Derive test suite from specs + constraints |
-| `/eclusa:generate` | Generate code against derived tests |
-| `/eclusa:pipeline` | Run all stages in sequence (also runs inline during plan-phase) |
-| `/eclusa:ingest` | Manage Schema Commons: `url`, `file`, `scan`, `seed`, `status`, `prune` |
-
-### Coordination
-| Command | What it does |
-|---------|-------------|
-| `/eclusa:new-project` | Deep questioning, research, requirements, roadmap |
-| `/eclusa:discuss-phase` | Surface assumptions and lock decisions before planning |
-| `/eclusa:plan-phase` | Research, run pipeline, create atomic plans with verification |
-| `/eclusa:execute-phase` | Wave-based parallel execution with atomic commits |
-| `/eclusa:verify-work` | Conversational user acceptance testing |
-| `/eclusa:autonomous` | Drive all remaining phases end-to-end |
-| `/eclusa:progress` | Status, routing, pipeline state, next action |
-
-### Operations
-| Command | What it does |
-|---------|-------------|
-| `/eclusa:debug` | Systematic debugging with persistent state across sessions |
-| `/eclusa:ship` | Create PR, run cross-AI review, prepare for merge |
-| `/eclusa:map-codebase` | Parallel analysis of existing codebases (auto-ingests schemas) |
-| `/eclusa:ui-phase` | Generate UI design contract for frontend phases |
-| `/eclusa:review` | Cross-AI peer review from external AI CLIs |
-
-### Governance
-| Command | What it does |
-|---------|-------------|
-| `/eclusa:decide` | List and resolve pending human decisions |
-| `/eclusa:provenance` | Verify hashes from intent to shipped code |
-| `/eclusa:diagnose` | Full diagnostic: validation, provenance, enforcement |
-
-## SDK
-
-`@eclusa/sdk` provides a programmatic interface for running eclusa phases and workflows from application code, built on the Claude Agent SDK. Supports CLI and WebSocket transports.
-
-```typescript
-import { SessionRunner } from '@eclusa/sdk';
-
-const session = new SessionRunner({ projectDir: '.' });
-await session.runPhase(1);
-```
+- **Ambiguity up, decisions down.** What can't be resolved at a given level cascades upward until someone (human or smarter model) resolves it. Decisions flow back down as constraints.
+- **No agent evaluates its own output.** Work sessions produce. Judgment passes evaluate. The evaluator physically cannot modify the work it's judging. This is topology, not policy.
+- **The application is its data.** State lives in Postgres. The executor is a stateless loop. If it crashes, restart it — all state survives.
+- **Code is the last output, not the objective.** The pipeline narrows ambiguity into verified constraints. Code generation is the mechanical final step.
+- **Three compute types.** Work sessions (tools, cheapest model). Judgment passes (single API call, frontier model). Fan-out (N parallel passes, convergence = auto-resolve, divergence = human gate).
 
 ## Architecture
 
-- **68 command definitions** — User-facing skills (markdown)
-- **48 workflows** — Orchestration logic (markdown)
-- **18 specialized agents** — Researcher, planner, executor, verifier, debugger, UI auditor, etc.
-- **65 CLI commands** — `eclusa-tools.cjs` backend dispatch
-- **5 hooks** — Context monitor, workflow guard, prompt guard, version check, statusline
-- **Zero runtime dependencies** — Node >= 20, that's it
+```
+                    ┌─────────────┐
+  Slack / WhatsApp  │             │  Back Office UI
+  Email / Webhooks ─┤   Eclusa    ├─ (React SPA)
+  CLI / API         │             │
+                    └──────┬──────┘
+                           │
+              ┌────────────┼────────────┐
+              │            │            │
+         ┌────┴────┐  ┌───┴────┐  ┌───┴────┐
+         │Executor │  │  API   │  │  Proxy  │
+         │(loop)   │  │(FastAPI│  │(mitmprxy│
+         └────┬────┘  └───┬────┘  └───┬────┘
+              │            │            │
+              └────────────┼────────────┘
+                           │
+                    ┌──────┴──────┐
+                    │  PostgreSQL  │
+                    │  + pgvector  │
+                    │  + pg_search │
+                    └─────────────┘
+```
 
-## Provenance
+**9 domain entities:** Intent, Actor, Cascade, Stage, Work Session, Judgment Pass, Fan-out, Artifact, Ledger Entry.
 
-Every commit carries content hashes as git trailers linking back to pipeline stage outputs: `Eclusa-Sources-Hash`, `Eclusa-Constraints-Hash`, `Eclusa-Test-Suite-Hash`. The chain is walkable. `/eclusa:provenance` verifies it.
+**Single Postgres** for everything — relational data, vectors, full-text search, job queue (SKIP LOCKED), event dispatch (LISTEN/NOTIFY). No Redis, no Kafka, no external vector DB.
 
-## Acknowledgments
+## Quick start
 
-Eclusa is a hard fork of [GSD](https://github.com/gsd-build/get-shit-done) by TACHES. GSD's coordination infrastructure — agent delegation, phased delivery, context window management, questioning phase, researcher swarm — is the foundation on which eclusa's pipeline is built.
+```bash
+# Clone and configure
+git clone <repo> && cd eclusa
+cp .env.example .env
+# Edit .env — set your OPENAI_API_KEY
 
-## License
+# Start everything
+docker compose up -d
 
-MIT
+# Services:
+#   http://localhost:8000  — UI (back office)
+#   http://localhost:8800  — API
+#   localhost:5432         — PostgreSQL
+```
+
+## Tech stack
+
+| Layer | Technology |
+|-------|-----------|
+| Executor | Python 3.12, asyncpg, SKIP LOCKED poll loop |
+| Agent harness | pydantic-ai (workspace tools, multi-turn) |
+| API | FastAPI, JWT auth, WebSocket |
+| Database | PostgreSQL 17, pgvector, pg_search (ParadeDB) |
+| Proxy | mitmproxy (captures all outbound LLM calls) |
+| UI | React 19, Vite, shadcn/ui, TanStack Query |
+| Formalize | GHC 9.10 sidecar (type-checks LLM-drafted Haskell) |
+| Deploy | Docker Compose — single command bootstrap |
+
+## Project structure
+
+```
+executor/       — Stateless dispatch loop, stage handlers, concurrency control
+harness/        — Agent harnesses (native pydantic-ai, workspace tools, formalize)
+adapters/       — Web API, Slack, WhatsApp, email adapters
+judgment/       — Judgment pass execution, context preparation
+fan_out/        — Parallel evaluation, convergence detection
+knowledge/      — Temporal knowledge graph (entities, facts, episodes)
+storage/        — Content-addressed object store (blake3)
+proxy/          — mitmproxy addon for outbound call capture
+ui/             — React SPA (back office)
+.eclusa/        — Project governance (roadmap, phases, plans, state)
+```
+
+## The cascade
+
+A cascade is a living directed graph of work, spawned from an intent. Not a workflow (implies start/finish). Not a pipeline (implies linear). Cascades branch, nest, and evolve.
+
+The first cascade template is the **Software Construction Cascade (SCC)** — 8 stages from intent to deployment. But the platform is general. A cascade could be: onboarding a new hire, launching a marketing campaign, investigating a production incident. Same primitives, same trace, same governance.
+
+## Status
+
+**v2.2** — 26 phases complete. Full SCC pipeline running end-to-end with workspace-equipped agents. Dogfood proof: natural language intent produces a deployed web application.
+
+Built by Nathan + Claude (orchestrator) + GPT-5.4-mini (planner) + GLM (agent worker). Eclusa was built using itself.

@@ -1,0 +1,64 @@
+# project.eclusa — eclusa pipeline project file
+# https://eclusa.dev
+---
+version: 5
+identity:
+  name: eclusa
+  description: Evergreen company operating system — coordination substrate where intents become traced artifacts
+  tags: [governance, orchestration, knowledge-graph, cascade, postgres, temporal]
+sources:
+  matched:
+
+  novel:
+
+constraints:
+  file: null
+stances:
+  - name: Reviewed Commits
+    premise: AI-generated diffs require human eyes.
+    rule: Present diff grouped by concern. Wait for approval.
+    enforcement: require(diff.approved_by_human)
+    materialization:
+      paths:
+        - type: git_hook
+          hook: "pre-commit: check approval marker"
+  - name: Model Provenance
+    premise: Every AI-touched commit must be traceable.
+    rule: Co-Authored-By with model-id.
+    enforcement: require(ai_commit.has_model_provenance)
+    materialization:
+      paths:
+        - type: git_hook
+          hook: "commit-msg: validate Co-Authored-By"
+  - name: Conservative Default
+    premise: Silence is not consent.
+    rule: Surface gaps. Don't guess.
+    enforcement: require(gaps.resolved_or_explicitly_deferred)
+provenance:
+  governance_level: full
+  storage: git-trailers
+agents:
+  models:
+    frontier:
+      model: claude-opus-4-6
+      parameters:
+        thinking: extended
+    standard:
+      model: claude-sonnet-4-6
+      parameters:
+        thinking: standard
+    fast:
+      model: claude-sonnet-4-6
+      parameters:
+        thinking: off
+    verify:
+      model: claude-sonnet-4-6
+      parameters:
+        temperature: 0
+  stage_bindings:
+    refine: frontier
+    coherence: standard
+    formalize: standard
+    derive: fast
+    generate: fast
+  topology: delegating
